@@ -7,7 +7,7 @@
 
 **Simple macOS workflow and shell script to compress files with the native xip program and sign them with an Installer Package Signing Certificate (IPSC)**
 
-Xipper lets you choose an IPSC identity from your keychain and will do the rest. If you run it on a xip archive, it will verify the signature. In case of pkgutil warnings, e.g. due to an untrusted certificate, you will receive information about the certificates and the signing party; then you have the choice to import either the leaf or (if there is one) the root into your login keychain as a trusted certificate.
+Xipper lets you choose an IPSC identity from your keychain and will do the rest. If you run it on a xip archive, it will verify the signature. In case of `pkgutil` warnings, e.g. due to an untrusted certificate, you will receive information about the certificates and the signing party; then you have the choice to import either the leaf or (if there is one) the root into your login keychain as a trusted certificate.
 
 For the difference between IPSCs and normal Code Signing Certificates, see Apple's documentation in §4.12 of [this PDF](http://images.apple.com/certificateauthority/pdf/Developer_ID_CPS_v1.0.pdf).
 
@@ -43,9 +43,9 @@ Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 App
 This is only necessary if for some reason you want to run this from the shell or another shell script.
 
 ## General Notes
-The normal procedure for getting an IPSC is to pay for an Apple Developer ID. But you can also self-sign your own IPSC (or issue one using your own CA). MacOS will not trust such a certificate, but you can, either manually or with Xipper.
+The normal procedure for getting an IPSC is to pay for an Apple Developer ID. But you can also self-sign your own IPSC (or issue one using your own CA). MacOS will not trust such a certificate, but you and third parties can, either manually or with Xipper.
 
-Self-signing (or self-issuing) your own IPSCs is easy. I recommend using [xca](https://sourceforge.net/projects/xca/) with the mandatory X509v3 extensions as put forth by Apple:
+Self-signing (or self-issuing) your own IPSCs is easy. You might be able to do it with Apple's own **Keychain Access*, but I recommend using **[xca](https://sourceforge.net/projects/xca/)** with the mandatory X509v3 extensions as put forth by Apple:
 
 ```
 1.2.840.113635.100.6.1.14=critical,DER:05:00

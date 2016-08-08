@@ -38,7 +38,7 @@ Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 App
 ### Shell script [optional]
 * Move the script to `/usr/local/bin`
 * In your shell enter `chmod +x /usr/local/bin/xipper.sh`
-* Run the scripts with `xipper.sh /path/to/your/file`
+* Run the script with `xipper.sh /path/to/your/file`
 
 This is only necessary if for some reason you want to run this from the shell or another shell script.
 

@@ -28,7 +28,7 @@ Because Xipper uses the macOS Notification Center, the minimum Mac OS requiremen
 Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 Apple's `security` program still does not include an option to search for IPSCs with the `security find-identity -p policy` command. I assume that the correct option would be `-p pkgSign`, but currently this is only available for `add-trusted-cert` and `verify-cert`. Therefore Xipper will search with the option `-p eap` instead. This might return more than your actual IPSCs, but it does show you all the valid identities in your keychains you can use to sign a xip archive.
 
 ## Installation & Usage
-* [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open [ not yet online! ]
+* [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open
 
 ### Workflows
 * Double-click on the workflow file to install

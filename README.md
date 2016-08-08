@@ -21,8 +21,8 @@ You need to have Spotlight enabled for `mdfind` to locate the terminal-notifier.
 Because Xipper uses the macOS Notification Center, the minimum Mac OS requirement is **OS X 10.8 (Mountain Lion)**.
 
 ## Caveats
-* I haven't upgraded to **macOS Sierra** yet, so I have no idea how the system will react to xip archives signed with self-issued/self-signed IPSCs; therefore the import & trust options (see also below).
-* The xip program needs to connect to Apple's timestamping server, so if your Mac is offline, Xipper will not work. Please note that the username you chose for your macOS will be embedded in the xip archive, not only your IPSC.
+* I haven't upgraded to **macOS Sierra** yet, so I have no idea how the system will react to xip archives signed with self-issued/self-signed IPSCs; therefore the import & trust options (see also below)… for what it's worth.
+* The xip program needs to connect to Apple's timestamping server, so if your Mac is offline, Xipper will not work. Please note that the username you chose for your macOS will be embedded in the xip archive's xml header as well, not only your IPSC.
 * Xipper searches for `eap` in your keychains instead of `pkgSign`.
 
 Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 Apple's `security` program still does not include an option to search for IPSCs with the `security find-identity -p policy` command. I assume that the correct option would be `-p pkgSign`, but currently this is only available for `add-trusted-cert` and `verify-cert`. Therefore Xipper will search with the option `-p eap` instead. This might return more than your actual IPSCs, but it does show you all the valid identities in your keychains you can use to sign a xip archive.

@@ -16,7 +16,7 @@ For the difference between IPSCs and normal Code Signing Certificates, see Apple
 
 Install using [Homebrew](http://brew.sh) with `brew install terminal-notifier` (or with a similar manager)
 
-You need to have Spotlight enabled for `mdfind` to locate the terminal-notifier.app on your volume; if you don't install terminal-notifier, or if you have deactivated Spotlight, the minisign scripts will call notifications via AppleScript instead.
+You need to have Spotlight enabled for `mdfind` to locate the terminal-notifier.app on your volume; if you don't install terminal-notifier, or if you have deactivated Spotlight, the Xipper script will call notifications via AppleScript instead.
 
 Because Xipper uses the macOS Notification Center, the minimum Mac OS requirement is **OS X 10.8 (Mountain Lion)**.
 

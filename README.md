@@ -5,7 +5,7 @@
 
 # Xipper <img src="https://github.com/JayBrown/Xipper/blob/master/img/jb-img.png" height="20px"/>
 
-**Simple macOS workflow and shell script to compress files with the native xip program and sign them with an Installer Package Signing Certificate (IPSC)**
+**Simple macOS workflow and shell script to compress files with the native xip program and sign them with an Installer Package Signing Certificate (IPSC), plus the ability to import and trust IPSCs untrusted by macOS default.**
 
 Xipper lets you choose an IPSC identity from your keychain and will do the rest. If you run it on a xip archive, it will verify the signature. In case of `pkgutil` warnings, e.g. due to an untrusted certificate, you will receive information about the certificates and the signing party; then you have the choice to import either the leaf or (if there is one) the root into your login keychain as a trusted certificate.
 

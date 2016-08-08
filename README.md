@@ -30,7 +30,7 @@ Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 App
 ## Installation & Usage
 * [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open
 
-### Workflows
+### Workflow
 * Double-click on the workflow file to install
 * If you encounter problems, open it with Automator and save/install from there
 * Standard Finder integration in the Services menu

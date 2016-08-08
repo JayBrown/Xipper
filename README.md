@@ -45,7 +45,7 @@ This is only necessary if for some reason you want to run this from the shell or
 ## General Notes
 The normal procedure for getting an IPSC is to pay for an Apple Developer ID. But you can also self-sign your own IPSC (or issue one using your own CA). MacOS will not trust such a certificate, but you and third parties can, either manually or with Xipper.
 
-Self-signing (or self-issuing) your own IPSCs is easy. You might be able to do it with Apple's own **Keychain Access*, but I recommend using **[xca](https://sourceforge.net/projects/xca/)** with the mandatory X509v3 extensions as put forth by Apple:
+Self-signing (or self-issuing) your own IPSCs is easy. You might be able to do it with Apple's own **Keychain Access**, but I recommend using **[xca](https://sourceforge.net/projects/xca/)** with the mandatory X509v3 extensions as put forth by Apple:
 
 ```
 1.2.840.113635.100.6.1.14=critical,DER:05:00

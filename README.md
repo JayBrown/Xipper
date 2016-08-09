@@ -25,7 +25,7 @@ Because Xipper uses the macOS Notification Center, the minimum Mac OS requiremen
 * The xip program needs to connect to Apple's timestamping server, so if your Mac is offline, Xipper will not work. Please note that the username you chose for your macOS will be embedded in the xip archive's xml header as well, not only your IPSC.
 * Xipper searches for `eap` in your keychains instead of `pkgSign`.
 
-Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 Apple's `security` program still does not include an option to search for IPSCs with the `security find-identity -p policy` command. I assume that the correct option would be `-p pkgSign`, but currently this is only available for `add-trusted-cert` and `verify-cert`. Therefore Xipper will search with the option `-p eap` instead. This might return more than your actual IPSCs, but it does show you all the valid identities in your keychains you can use to sign a xip archive.
+Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 Apple's `security` program still does not include an option to search for IPSCs with the `security find-identity -p policy` command. I assume that the correct option would be `-p pkgSign`, but currently this is only available for `add-trusted-cert` and `verify-cert`. Therefore Xipper will search with the option `-p eap` instead. This might return more than your actual IPSCs, but it does show you all the valid identities in your keychains you can use to sign a xip archive; these would also include your Apple ID certificate, the one that begins with `com.apple.idms.appleid.prd`.
 
 ## Installation & Usage
 * [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open

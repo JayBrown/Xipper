@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Xipper v1.0 (shell script version)
+# Xipper v1.0.1 (shell script version)
 
 LANG=en_US.UTF-8
 export PATH=/usr/local/bin:$PATH
 ACCOUNT=$(who am i | /usr/bin/awk {'print $1'})
-CURRENT_VERSION="1.0"
+CURRENT_VERSION="1.01"
 
 # check compatibility & determine correct Mac OS name
 MACOS2NO=$(/usr/bin/sw_vers -productVersion | /usr/bin/awk -F. '{print $2}')
@@ -216,9 +216,12 @@ if [[ "$METHOD" == "verify" ]] ; then
 	if [[ $(echo "$XIP_STATUS" | /usr/bin/grep "untrusted") != "" ]] ; then
 		VER_STATUS="false"
 		notify "pkgutil: warning" "$XIP_STATUS"
-	else
+	elif [[ "$XIP_STATUS" == "signed by a certificate trusted by Mac OS X" ]] ; then
 		VER_STATUS="true"
-		notify "pkgutil: notification" "Certificate is trusted"
+		notify "pkgutil: notification" "Certificate trusted by macOS"
+	elif [[ "$XIP_STATUS" == "signed by a certificate trusted for current user" ]] ; then
+		VER_STATUS="true"
+		notify "pkgutil: notification" "Certificate trusted by $ACCOUNT"
 	fi
 	# dump full xip/xar TOC xml
 	TOC=$(/usr/bin/xar --dump-toc=- -f "$FILEPATH")
@@ -246,7 +249,10 @@ if [[ "$METHOD" == "verify" ]] ; then
 	SUBJECT=$(echo "$SUBJECT_RAW" | /usr/bin/awk -F/ '{print $1}')
 	SINCE=$(echo "$LEAF" | /usr/bin/grep "notBefore=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
 	UNTIL=$(echo "$LEAF" | /usr/bin/grep "notAfter=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
-	XIP_INFO="Issuer: $ISSUER
+	XIP_INFO="Verification status (pkgutil):
+$XIP_STATUS
+
+Issuer: $ISSUER
 Subject: $SUBJECT
 Issued: $SINCE
 Valid until: $UNTIL

@@ -43,7 +43,9 @@ Explanation: Maybe this will change in **macOS Sierra**, but in OS X 10.11.6 App
 This is only necessary if for some reason you want to run this from the shell or another shell script.
 
 ## General Notes
-The normal procedure for getting an IPSC is to pay for an Apple Developer ID. But you can also self-sign your own IPSC (or issue one using your own CA). MacOS will not trust such a certificate, but you and third parties can, either manually or with Xipper.
+You can always sign xip archives with your Apple-issued trusted Apple ID certificate, which is the one that has the common name `com.apple.idms.appleid.prd.xxxxxxxxxxxxxxxx`, which you also need to authenticate yourself on certain websites like sap.com.
+
+The normal procedure for getting another IPSC is to pay for an Apple Developer ID. But you can also self-sign your own IPSC (or issue one using your own CA). MacOS will not trust such a certificate, but you and third parties can, either manually or with Xipper.
 
 Self-signing (or self-issuing) your own IPSCs is easy. You might be able to do it with Apple's own **Keychain Access**, but I recommend using **[xca](https://sourceforge.net/projects/xca/)** with the mandatory X509v3 extensions as put forth by Apple:
 

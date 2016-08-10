@@ -56,8 +56,6 @@ basicConstraints=critical,CA:FALSE
 ```
 
 ## To do
-* pkgutil: "signed Apple software" must not be ignored
-* additional information from the root certificate (important if there's a three-part certificate chain)
 * xip creation: mkdir temporary target directory && mv target file (necessary if target is a single file, and not a folder)
 * check: read Apple ID from system? (Should replace com.apple.idms.appleid.prd.*)
 * later: check if there are additional options for dealing with xip archives when using the xar program

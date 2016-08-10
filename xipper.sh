@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Xipper v1.0.1 (shell script version)
+# Xipper v1.0.2 (shell script version)
 
 LANG=en_US.UTF-8
 export PATH=/usr/local/bin:$PATH
 ACCOUNT=$(who am i | /usr/bin/awk {'print $1'})
-CURRENT_VERSION="1.01"
+CURRENT_VERSION="1.02"
 
 # check compatibility & determine correct Mac OS name
 MACOS2NO=$(/usr/bin/sw_vers -productVersion | /usr/bin/awk -F. '{print $2}')
@@ -219,20 +219,29 @@ if [[ "$METHOD" == "verify" ]] ; then
 	elif [[ "$XIP_STATUS" == "signed by a certificate trusted by Mac OS X" ]] ; then
 		VER_STATUS="true"
 		notify "pkgutil: notification" "Certificate trusted by macOS"
+	elif [[ "$XIP_STATUS" == "signed Apple software" ]] ; then
+		VER_STATUS="true"
+		notify "pkgutil: notification" "Signed Apple software"
 	elif [[ "$XIP_STATUS" == "signed by a certificate trusted for current user" ]] ; then
 		VER_STATUS="true"
 		notify "pkgutil: notification" "Certificate trusted by $ACCOUNT"
+	else
+		VER_STATUS="false"
+		notify "Unknown status" "Please refer to pkgutil output"
 	fi
 	# dump full xip/xar TOC xml
 	TOC=$(/usr/bin/xar --dump-toc=- -f "$FILEPATH")
+	echo "$TOC" > "$CERT_DIR/$TARGET_NAME-toc.xml"
 	# determine date of xip creation & username
 	XIP_USER=$(echo "$TOC" | /usr/bin/xmllint --xpath '//user' - | /usr/bin/awk '{gsub("<user>",""); gsub("</user>",""); print}')
 	XIP_DATE=$(echo "$TOC" | /usr/bin/xmllint --xpath '//ctime' - | /usr/bin/awk '{gsub("<ctime>",""); gsub("</ctime>",""); gsub("T"," "); gsub("Z",""); print}')
-	# export certificate(s)
+	# export certificate(s) # /usr/bin/sed -e 's/^[ \t]*//'
 	echo "$TOC" | /usr/bin/xmllint --xpath '//signature[@style="RSA"]' - \
 		| /usr/bin/sed -n '/<X509Certificate>/,/<\/X509Certificate>/p' \
-		| /usr/bin/sed -e 's/^[ \t]*//' \
-		| /usr/bin/awk '{gsub("<X509Certificate>","-----BEGIN CERTIFICATE-----\n"); gsub("</X509Certificate>","\n-----END CERTIFICATE-----"); print}' \
+		| xargs \
+		| /usr/bin/awk '{gsub("<X509Certificate>","-----BEGINCERTIFICATE-----"); gsub("</X509Certificate>","-----ENDCERTIFICATE-----"); print}' \
+		| /usr/bin/awk '{gsub(" ","\n"); print}' \
+		| /usr/bin/awk '{gsub("-----BEGINCERTIFICATE-----","-----BEGIN CERTIFICATE-----\n"); gsub("-----ENDCERTIFICATE-----","\n-----END CERTIFICATE-----"); print}' \
 		| /usr/bin/csplit -k -s -n 1 -f "$CERT_DIR/$TARGET_NAME"-cert - '/END CERTIFICATE/+1' '{3}' 2>/dev/null
 	for CERT in "$CERT_DIR/$TARGET_NAME-cert"* ; do
 		if [[ $(/bin/cat "$CERT") == "" ]] ; then
@@ -249,11 +258,18 @@ if [[ "$METHOD" == "verify" ]] ; then
 	SUBJECT=$(echo "$SUBJECT_RAW" | /usr/bin/awk -F/ '{print $1}')
 	SINCE=$(echo "$LEAF" | /usr/bin/grep "notBefore=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
 	UNTIL=$(echo "$LEAF" | /usr/bin/grep "notAfter=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
+	if [[ -e "$CERT_DIR/$TARGET_NAME-cert2.pem" ]] ; then
+		ROOT=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-cert2.pem" -noout -subject | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}' | /usr/bin/awk -F/ '{print $1}')
+	else
+		ROOT="$ISSUER"
+	fi
 	XIP_INFO="Verification status (pkgutil):
 $XIP_STATUS
 
-Issuer: $ISSUER
 Subject: $SUBJECT
+Issuer: $ISSUER
+Root: $ROOT
+
 Issued: $SINCE
 Valid until: $UNTIL
 
@@ -327,5 +343,8 @@ end tell
 EOT)
 	fi
 fi
+
+rm -rf "$CERT_DIR/$TARGET_NAME-toc.xml"
+rm -rf "$CERT_DIR/$TARGET_NAME-cert"*
 
 exit # ALT: done

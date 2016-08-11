@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Xipper v1.0.2 (shell script version)
+# Xipper v1.1 (shell script version)
 
 LANG=en_US.UTF-8
 export PATH=/usr/local/bin:$PATH
 ACCOUNT=$(who am i | /usr/bin/awk {'print $1'})
-CURRENT_VERSION="1.02"
+CURRENT_VERSION="1.1"
 
 # check compatibility & determine correct Mac OS name
 MACOS2NO=$(/usr/bin/sw_vers -productVersion | /usr/bin/awk -F. '{print $2}')
@@ -41,14 +41,15 @@ notify () {
 
 # directories
 CACHE_DIR="${HOME}/Library/Caches/local.lcars.xipper"
-if [[ ! -e "$CACHE_DIR" ]] ; then
-	mkdir -p "$CACHE_DIR"
-fi
+mkdir -p "$CACHE_DIR"
 CERT_DIR="$CACHE_DIR/certs"
-if [[ ! -e "$CERT_DIR" ]] ; then
-	mkdir -p "$CERT_DIR"
-fi
-rm -rf "$CERT_DIR/"*
+mkdir -p "$CERT_DIR"
+TOC_DIR="$CACHE_DIR/toc"
+mkdir -p "$TOC_DIR"
+
+# remove old toc and certificates from previous run
+rm -rf "$TOC_DIR/"*".xml"
+rm -rf "$CERT_DIR/"*".pem"
 
 # icon for notifications & prompts
 ICON64="iVBORw0KGgoAAAANSUhEUgAAAIwAAACMEAYAAAD+UJ19AAACYElEQVR4nOzUsW1T
@@ -204,12 +205,13 @@ tell application "System Events"
 		with icon file theLogoPath ¬
 		giving up after 180)
 end tell
+userChoice
 EOT)
 		exit # ALT: continue
 	fi
 fi
 
-# very xip archive
+# verify xip archive
 if [[ "$METHOD" == "verify" ]] ; then
 	XIP_VERIFY=$(/usr/sbin/pkgutil --check-signature "$FILEPATH")
 	XIP_STATUS=$(echo "$XIP_VERIFY" | /usr/bin/awk '/Status:/ {print substr($0, index($0,$2))}')
@@ -218,32 +220,41 @@ if [[ "$METHOD" == "verify" ]] ; then
 		notify "pkgutil: warning" "$XIP_STATUS"
 	elif [[ "$XIP_STATUS" == "signed by a certificate trusted by Mac OS X" ]] ; then
 		VER_STATUS="true"
+		APPLE="true"
 		notify "pkgutil: notification" "Certificate trusted by macOS"
 	elif [[ "$XIP_STATUS" == "signed Apple software" ]] ; then
 		VER_STATUS="true"
+		APPLE="true"
 		notify "pkgutil: notification" "Signed Apple software"
 	elif [[ "$XIP_STATUS" == "signed by a certificate trusted for current user" ]] ; then
 		VER_STATUS="true"
+		APPLE="false"
 		notify "pkgutil: notification" "Certificate trusted by $ACCOUNT"
+	elif [[ "$XIP_STATUS" == "signed by a certificate that has since expired" ]] ; then
+		VER_STATUS="true"
+		APPLE="true"
+		notify "pkgutil: notification" "Expired certificate or untrusted root"
 	else
 		VER_STATUS="false"
 		notify "Unknown status" "Please refer to pkgutil output"
 	fi
 	# dump full xip/xar TOC xml
+	CURRENT_DATE=$(/bin/date +%Y%m%d-%H%M%S)
 	TOC=$(/usr/bin/xar --dump-toc=- -f "$FILEPATH")
-	echo "$TOC" > "$CERT_DIR/$TARGET_NAME-toc.xml"
+	TOC_LOC="$TOC_DIR/$TARGET_NAME-$CURRENT_DATE-toc.xml"
+	echo "$TOC" > "$TOC_LOC"
 	# determine date of xip creation & username
 	XIP_USER=$(echo "$TOC" | /usr/bin/xmllint --xpath '//user' - | /usr/bin/awk '{gsub("<user>",""); gsub("</user>",""); print}')
 	XIP_DATE=$(echo "$TOC" | /usr/bin/xmllint --xpath '//ctime' - | /usr/bin/awk '{gsub("<ctime>",""); gsub("</ctime>",""); gsub("T"," "); gsub("Z",""); print}')
-	# export certificate(s) # /usr/bin/sed -e 's/^[ \t]*//'
+	# export certificate(s)
 	echo "$TOC" | /usr/bin/xmllint --xpath '//signature[@style="RSA"]' - \
 		| /usr/bin/sed -n '/<X509Certificate>/,/<\/X509Certificate>/p' \
 		| xargs \
 		| /usr/bin/awk '{gsub("<X509Certificate>","-----BEGINCERTIFICATE-----"); gsub("</X509Certificate>","-----ENDCERTIFICATE-----"); print}' \
 		| /usr/bin/awk '{gsub(" ","\n"); print}' \
-		| /usr/bin/awk '{gsub("-----BEGINCERTIFICATE-----","-----BEGIN CERTIFICATE-----\n"); gsub("-----ENDCERTIFICATE-----","\n-----END CERTIFICATE-----"); print}' \
-		| /usr/bin/csplit -k -s -n 1 -f "$CERT_DIR/$TARGET_NAME"-cert - '/END CERTIFICATE/+1' '{3}' 2>/dev/null
-	for CERT in "$CERT_DIR/$TARGET_NAME-cert"* ; do
+		| /usr/bin/awk '{gsub("BEGINCERTIFICATE-----","BEGIN CERTIFICATE-----\n"); gsub("-----ENDCERTIFICATE","\n-----END CERTIFICATE"); print}' \
+		| /usr/bin/csplit -k -s -n 1 -f "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE"-cert - '/END CERTIFICATE/+1' '{3}' 2>/dev/null
+	for CERT in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert"* ; do
 		if [[ $(/bin/cat "$CERT") == "" ]] ; then
 			rm -rf "$CERT"
 		else
@@ -251,7 +262,7 @@ if [[ "$METHOD" == "verify" ]] ; then
 		fi
 	done
 	# check leaf certificate information
-	LEAF=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-cert0.pem" -noout -issuer -subject -startdate -enddate)
+	LEAF=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert0.pem" -noout -issuer -subject -startdate -enddate)
 	ISSUER_RAW=$(echo "$LEAF" | /usr/bin/grep "issuer=" | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}')
 	ISSUER=$(echo "$ISSUER_RAW" | /usr/bin/awk -F/ '{print $1}')
 	SUBJECT_RAW=$(echo "$LEAF" | /usr/bin/grep "subject=" | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}')
@@ -259,9 +270,12 @@ if [[ "$METHOD" == "verify" ]] ; then
 	SINCE=$(echo "$LEAF" | /usr/bin/grep "notBefore=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
 	UNTIL=$(echo "$LEAF" | /usr/bin/grep "notAfter=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
 	if [[ -e "$CERT_DIR/$TARGET_NAME-cert2.pem" ]] ; then
-		ROOT=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-cert2.pem" -noout -subject | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}' | /usr/bin/awk -F/ '{print $1}')
+		ROOT=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert2.pem" -noout -subject | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}' | /usr/bin/awk -F/ '{print $1}')
 	else
 		ROOT="$ISSUER"
+	fi
+	if [[ "$ROOT" == "" ]] ; then
+		ROOT="n/a"
 	fi
 	XIP_INFO="Verification status (pkgutil):
 $XIP_STATUS
@@ -281,70 +295,75 @@ Creation date: $XIP_DATE UTC"
 		CERTS_LIST=$(find "$CERT_DIR" -maxdepth 1 -name \*.pem)
 		CERTS_COUNT=$(echo "$CERTS_LIST" | /usr/bin/wc -l | xargs)
 		if [[ "$CERTS_COUNT" -gt 1 ]] ; then
-			INFO=$(/usr/bin/osascript << EOT
-tell application "System Events"
-	activate
-	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
-	set userChoice to button returned of (display dialog "The program pkgutil has given a warning for the archive \"" & "$TARGET_NAME" & "\". Do you want to import and trust the root certificate(s) or only the leaf certificate?" & Return & Return & "$XIP_INFO" ¬
-		buttons {"Cancel", "Trust Leaf", "Trust Root"} ¬
-		default button 1 ¬
-		with title "Warning" ¬
-		with icon file theLogoPath ¬
-		giving up after 180)
-end tell
-EOT)
-			if [[ "$INFO" == "" ]] || [[ "$INFO" == "false" ]] ; then
-				rm -rf "$CERT_DIR/$TARGET_NAME-cert"*
-				exit # ALT: continue
-			elif [[ "$INFO" == "Trust Leaf" ]] ; then
-				/usr/bin/security add-trusted-cert -r trustAsRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-cert0.pem" && rm -rf "$CERT_DIR/$TARGET_NAME-cert"* && notify "Trusted leaf as root" "$SUBJECT"
-			elif [[ "$INFO" == "Trust Root" ]] ; then
-				if [[ -e "$CERT_DIR/$TARGET_NAME-cert2.pem" ]] ; then
-					/usr/bin/security add-trusted-cert -r trustRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-cert2.pem" && \
-						/usr/bin/security add-certificates -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-cert1.pem" && \
-						notify "Trusted root & intermediary" "$ISSUER" && \
-						rm -rf "$CERT_DIR/$TARGET_NAME-cert"*
-				else
-					/usr/bin/security add-trusted-cert -r trustRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-cert1.pem" && rm -rf "$CERT_DIR/$TARGET_NAME-cert"* && notify "Trusted root" "$ISSUER"
-				fi
-			fi
+			CERT_INFO="certificate chain"
 		else
-			INFO=$(/usr/bin/osascript << EOT
-tell application "System Events"
-	activate
-	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
-	set userChoice to button returned of (display dialog "The program pkgutil has given a warning for the archive \"" & "$TARGET_NAME" & "\". Do you want to import and trust the leaf certificate?" & Return & Return & "$XIP_INFO" ¬
-		buttons {"Cancel", "Trust Leaf"} ¬
-		default button 1 ¬
-		with title "Warning" ¬
-		with icon file theLogoPath ¬
-		giving up after 180)
-end tell
-EOT)
-			if [[ "$INFO" == "" ]] || [[ "$INFO" == "false" ]] ; then
-				rm -rf "$CERT_DIR/$TARGET_NAME-cert"*
-				exit # ALT: continue
-			elif [[ "$INFO" == "Trust Leaf" ]] ; then
-				/usr/bin/security add-trusted-cert -r trustAsRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-cert0.pem" && rm -rf "$CERT_DIR/$TARGET_NAME-cert"* && notify "Trusted leaf as root" "$SUBJECT"
-			fi
+			CERT_INFO="certificate"
 		fi
-	elif [[ "$VER_STATUS" == "true" ]] ; then
 		INFO=$(/usr/bin/osascript << EOT
 tell application "System Events"
 	activate
 	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
-	set userChoice to button returned of (display dialog "Certificate information for \"" & "$TARGET_NAME" & "\"" & Return & Return & "$XIP_INFO" ¬
+	set userChoice to button returned of (display dialog "The program pkgutil has given a warning for the archive \"" & "$TARGET_NAME" & "\". Do you want to trust the " & "$CERT_INFO" & "?" & Return & Return & "$XIP_INFO" ¬
+		buttons {"Cancel", "Trust"} ¬
+		default button 1 ¬
+		with title "Warning" ¬
+		with icon file theLogoPath ¬
+		giving up after 180)
+end tell
+userChoice
+EOT)
+		if [[ "$INFO" == "" ]] || [[ "$INFO" == "false" ]] ; then
+				exit # ALT: continue
+		fi
+		if [[ "$CERTS_COUNT" -gt 1 ]] ; then
+			if [[ -e "$CERT_DIR/$TARGET_NAME--$CURRENT_DATE-cert2.pem" ]] ; then
+				/usr/bin/security add-trusted-cert -r trustRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert2.pem" && \
+					notify "Imported & trusted root certificate" "$ROOT"
+			else
+				/usr/bin/security add-trusted-cert -r trustRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert1.pem" && \
+					notify "Imported & trusted root certificate" "$ROOT"
+			fi
+		else
+			/usr/bin/security add-trusted-cert -r trustAsRoot -k "${HOME}/Library/Keychains/login.keychain" "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert0.pem" && \
+				notify "Imported & trusted certificate" "$SUBJECT"
+		fi
+	elif [[ "$VER_STATUS" == "true" ]] ; then
+		if [[ "$APPLE" == "true" ]] ; then
+			INFO=$(/usr/bin/osascript << EOT
+tell application "System Events"
+	activate
+	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
+	set userChoice to button returned of (display dialog "Archive: " & "$TARGET_NAME" & Return & Return & "$XIP_INFO" ¬
 		buttons {"OK"} ¬
 		default button 1 ¬
 		with title "Results" ¬
 		with icon file theLogoPath ¬
 		giving up after 180)
 end tell
+userChoice
 EOT)
+		elif [[ "$APPLE" == "false" ]] ; then
+			INFO=$(/usr/bin/osascript << EOT
+tell application "System Events"
+	activate
+	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
+	set userChoice to button returned of (display dialog "Archive: " & "$TARGET_NAME" & Return & Return & "$XIP_INFO" ¬
+		buttons {"Revoke Trust","OK"} ¬
+		default button 2 ¬
+		with title "Results" ¬
+		with icon file theLogoPath ¬
+		giving up after 180)
+end tell
+userChoice
+EOT)
+			if [[ "$INFO" == "Revoke Trust" ]] ; then
+				for CERT in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert"* ; do
+					/usr/bin/security remove-trusted-cert "$CERT" 2>/dev/null
+				done
+				notify "Revoked trusted certificate" "$ROOT | $SUBJECT"
+			fi
+		fi
 	fi
 fi
-
-rm -rf "$CERT_DIR/$TARGET_NAME-toc.xml"
-rm -rf "$CERT_DIR/$TARGET_NAME-cert"*
 
 exit # ALT: done

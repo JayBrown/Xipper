@@ -57,5 +57,7 @@ basicConstraints=critical,CA:FALSE
 
 ## To do
 * xip creation: mkdir temporary target directory && mv target file (necessary if target is a single file, and not a folder)
+* add option to revoke trust for user-trusted certificates
+* expand cache to subfolders and keep certificates & xip TOCs in ./trusted or ./untrusted (in case the user wants to manually inspect them further)
 * check: read Apple ID from system? (Should replace com.apple.idms.appleid.prd.*)
 * later: check if there are additional options for dealing with xip archives when using the xar program

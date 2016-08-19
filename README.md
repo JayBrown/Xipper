@@ -35,6 +35,7 @@ Because Xipper uses the macOS Notification Center, the minimum Mac OS requiremen
 
 ## Installation & Usage
 * [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open
+* Delete/remove any earlier version of `Xipper.workflow` or `xipper.sh` from your system
 
 ### Workflows
 * Double-click on the workflow files to install

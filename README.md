@@ -5,9 +5,9 @@
 
 # Xipper <img src="https://github.com/JayBrown/Xipper/blob/master/img/jb-img.png" height="20px"/>
 
-**Simple macOS workflows and shell scripts
-* to compress files with the native xip program and sign them with an Installer Package Signing Certificate (IPSC), and
-* to verify IPSCs and import/trust IPSCs untrusted by macOS default.**
+**Simple macOS workflows and shell scripts**
+* **to compress files with the native xip program and sign them with an Installer Package Signing Certificate (IPSC), and**
+* **to verify IPSCs and import/trust IPSCs untrusted by macOS default.**
 
 **Xipper ➤ Create** lets you choose an IPSC-compatible identity from your keychains and will do the rest, namely create a xip archive from the file(s) you selected; it uses the native macOS [`xip` program](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/xip.1.html).
 

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Xipper v1.2.0
+# Xipper v1.2.1
 # Xipper ➤ Create (shell script version)
 
 LANG=en_US.UTF-8
 export PATH=/usr/local/bin:$PATH
 ACCOUNT=$(/usr/bin/id -un)
-CURRENT_VERSION="1.20"
+CURRENT_VERSION="1.21"
 
 # check compatibility & determine correct Mac OS name
 MACOS2NO=$(/usr/bin/sw_vers -productVersion | /usr/bin/awk -F. '{print $2}')
@@ -234,7 +234,7 @@ EOT)
 		echo "$XIP_OUT"
 		sleep 10
 		if [[ $(echo "$XIP_OUT" | /usr/bin/grep "xip: error:") != "" ]] ; then
-			notify "xip: error" "Please refer to output"
+			notify "xip: error" "Please refer to xip stderr"
 			XIP_OUT=$(echo "$XIP_OUT" | /usr/bin/sed -e 's/\"//g' -e 'G;')
 
 			# xip error info window

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Xipper v1.2.0
+# Xipper v1.2.1
 # Xipper ➤ Verify (shell script version)
 
 LANG=en_US.UTF-8
 export PATH=/usr/local/bin:$PATH
 ACCOUNT=$(/usr/bin/id -un)
-CURRENT_VERSION="1.20"
+CURRENT_VERSION="1.21"
 
 # check compatibility & determine correct Mac OS name
 MACOS2NO=$(/usr/bin/sw_vers -productVersion | /usr/bin/awk -F. '{print $2}')
@@ -126,7 +126,7 @@ elif [[ "$XIP_STATUS" == "signed by a certificate trusted for current user" ]] ;
 elif [[ "$XIP_STATUS" == "signed by a certificate trusted on this system" ]] ; then
 	VER_STATUS="true"
 	APPLE="false"
-	notify "$TARGET_NAME" "✔︎ Certificate trusted on this system"
+	notify "$TARGET_NAME" "✔︎ Certificate trusted by admin"
 elif [[ "$XIP_STATUS" == "signed by a certificate that has since expired" ]] ; then
 	VER_STATUS="true"
 	APPLE="true"
@@ -163,32 +163,47 @@ for CERT in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert"* ; do
 done
 
 # check leaf certificate information
-LEAF=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert0.pem" -noout -issuer -subject -startdate -enddate)
+LEAF=$(/usr/bin/openssl x509 -in "$CERT_DIR/$TARGET_NAME-$CURRENT_DATE-cert0.pem" -noout -issuer -subject -startdate -enddate -fingerprint)
 ISSUER_RAW=$(echo "$LEAF" | /usr/bin/grep "issuer=" | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}')
 ISSUER=$(echo "$ISSUER_RAW" | /usr/bin/awk -F/ '{print $1}')
 SUBJECT_RAW=$(echo "$LEAF" | /usr/bin/grep "subject=" | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}')
 SUBJECT=$(echo "$SUBJECT_RAW" | /usr/bin/awk -F/ '{print $1}')
 SINCE=$(echo "$LEAF" | /usr/bin/grep "notBefore=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
 UNTIL=$(echo "$LEAF" | /usr/bin/grep "notAfter=" |/usr/bin/awk -F= '{print substr($0, index($0,$2))}')
+HASH=$(echo "$LEAF" | /usr/bin/grep "SHA1 Fingerprint=" | /usr/bin/awk -F= '{gsub (":",""); print substr($0, index($0,$2))}')
 CERTS_LIST=$(find "$CERT_DIR" -maxdepth 1 -name \*.pem | /usr/bin/sort -nr)
 ROOT_CERT=$(echo "$CERTS_LIST" | /usr/bin/head -n 1)
-ROOT=$(/usr/bin/openssl x509 -in "$ROOT_CERT" -noout -subject | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}' | /usr/bin/awk -F/ '{print $1}')
-if [[ "$ROOT" == "" ]] ; then
+ROOT_RAW=$(/usr/bin/openssl x509 -in "$ROOT_CERT" -noout -subject -fingerprint)
+if [[ "$ROOT_RAW" == "" ]] ; then
 	ROOT="n/a"
+	ROOT_HASH="n/a"
+else
+	ROOT=$(echo "$ROOT_RAW" | /usr/bin/grep "subject=" | /usr/bin/awk -F"/CN=" '{print substr($0, index($0,$2))}' | /usr/bin/awk -F/ '{print $1}')
+	ROOT_HASH=$(echo "$ROOT_RAW" | /usr/bin/grep "SHA1 Fingerprint=" | /usr/bin/awk -F= '{gsub (":",""); print substr($0, index($0,$2))}')
 fi
 
 # set info window text
-XIP_INFO="Verification status (pkgutil):
+XIP_INFO="■■■ Archive filename ■■■
+$TARGET_NAME
+
+■■■ Verification status (pkgutil) ■■■
 $XIP_STATUS
 
-Subject: $SUBJECT
-Issuer: $ISSUER
-Root: $ROOT
+■■■ Subject ■■■
+CN: $SUBJECT
+SHA-1: $HASH
 
+■■■ Issuer ■■■
+CN: $ISSUER
 Issued: $SINCE
 Valid until: $UNTIL
 
-Archive created by: $XIP_USER
+■■■ Root ■■■
+CN: $ROOT
+SHA-1: $ROOT_HASH
+
+■■■ Archive data ■■■
+Created by: $XIP_USER
 Creation date: $XIP_DATE UTC"
 
 # info windows
@@ -205,7 +220,7 @@ if [[ "$VER_STATUS" == "false" ]] ; then
 tell application "System Events"
 	activate
 	set theLogoPath to ((path to library folder from user domain) as text) & "Caches:local.lcars.xipper:lcars.png"
-	set userChoice to button returned of (display dialog "The program pkgutil has given a warning for the archive \"" & "$TARGET_NAME" & "\". Do you want to trust the " & "$CERT_INFO" & "?" & Return & Return & "$XIP_INFO" ¬
+	set userChoice to button returned of (display dialog "The program pkgutil has given a warning for the current archive. Do you want to trust the " & "$CERT_INFO" & "?" & Return & Return & "$XIP_INFO" ¬
 		buttons {"Cancel", "Trust"} ¬
 		default button 1 ¬
 		with title "Warning" ¬

@@ -11,7 +11,7 @@
 
 **Xipper ➤ Create** lets you choose an IPSC-compatible identity from your keychains and will do the rest, namely create a xip archive from the file(s) you selected; it uses the native macOS [`xip` program](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/xip.1.html).
 
-**Xipper ➤ Verify** verifies the signature of a xip archive. In case of `pkgutil` warnings, e.g. due to an untrusted certificate, you will receive information about the certifiate chain and the xip's origin; then you have the choice to trust and import the root certificate into your login keychain (or the leaf, if there is no root). You also have the option to revoke such a trust setting later.
+**Xipper ➤ Verify** verifies the signature of a xip archive. In case of `pkgutil` warnings, e.g. due to an untrusted certificate, you will receive information about the certificate chain and the xip's origin; then you have the choice to trust and import the root certificate into your login keychain (or the leaf, if there is no root). You also have the option to revoke such a trust setting later.
 
 For the difference between IPSCs and normal Code Signing Certificates (CSCs), see Apple's documentation in §4.12 of [this PDF](http://images.apple.com/certificateauthority/pdf/Developer_ID_CPS_v1.0.pdf).
 
@@ -29,13 +29,13 @@ Because Xipper uses the macOS Notification Center, the minimum Mac OS requiremen
 ## Caveats
 * I haven't upgraded to **macOS Sierra** yet, so I have no idea how the system will react to xip archives signed with self-issued/self-signed IPSCs, i.e. 3rd-party certificates not issued by Apple; therefore the import & trust options (see also below)… for what it's worth.
 * The xip program needs to connect to Apple's trusted timestamping server, so if your Mac is offline, Xipper will run with the option `--timestamp=none`
-* Please note that the username you chose for your macOS will be embedded in the xip archive's xml header as well, not only your IPSC; so if you want to keep your local username private, you should create a DMG and `codesign` it with a CSC; my own workflow **[DiMaGo](https://github.com/JayBrown/DiMaGo)** will also do that for you.
+* Please note that the username you chose for your macOS will be embedded in the xip archive's xml header as well, not only your IPSC; so if you want to keep your local username private, you should create a DMG and `codesign` it with a CSC; my own workflow **[DiMaGo](https://github.com/JayBrown/DiMaGo)** will eventually do that for you.
 * Also note that `xip` creates archives with a silent obligatory `--keepParent` option, so if your source is a single file, e.g. a text document or a binary, the contents of your xip archive will reveal the name of file's original parent directory, if you don't put your target file(s) into a dedicated new folder before xipping. (This does not apply if you are xipping bundles.)
 * Xipper searches for `eap` in your keychains instead of `pkgSign`; explanation: maybe this will change in **macOS Sierra**, but in OS X 10.11.6 Apple's `security` program still does not include an option to search for IPSCs with the `security find-identity -p policy` command. I assume that the correct option would be `-p pkgSign`, but currently this is only available for `add-trusted-cert` and `verify-cert`. Therefore Xipper will search with the option `-p eap` instead. This might return more than your actual IPSCs, but it does show you all the valid identities in your keychains you can use to sign a xip archive; these would also include your Apple ID certificate, the one that begins with `com.apple.idms.appleid.prd`.
 
 ## Installation & Usage
 * [Download the latest DMG](https://github.com/JayBrown/Xipper/releases) and open
-* Delete/remove any earlier version of `Xipper.workflow` or `xipper.sh` from your system
+* Delete/remove any copies of the now deprecated single-file version `Xipper.workflow` or `xipper.sh` from your system
 
 ### Workflows
 * Double-click on the workflow files to install
@@ -66,6 +66,6 @@ These are just the basic extensions for signing xip archives or a pkg file; if y
 
 ## To do
 * further inspect certificates with `openssl`, e.g. to check if CA=true|false
-* **later:** check if there are additional options for dealing with xip archives when using the xar program
-* **maybe:** read Apple ID from system? (Should replace com.apple.idms.appleid.prd.*)
-* **maybe:** mkdir temporary target directory && mv target file (necessary if target is a single file, and not a folder, or several targets in different locations)
+* **later:** check if there are additional options for dealing with xip archives when using the `xar` program
+* **maybe:** read Apple ID from system? (Should replace `com.apple.idms.appleid.prd.*`)
+* **maybe:** `mkdir` temporary target directory && `mv` target file (necessary if target is a single file, and not a folder, or several targets in different locations)
